@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>sample</string><!-- Should be same as filename without extension -->
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>PATH</string>
+  </dict>
+  <key>WorkingDirectory</key>
+  <string>/directory/to/project</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>./discover.sh</string>
+  </array>
+  <!-- Run every day -->
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>03</integer>
+    <key>Minute</key>
+    <integer>30</integer>
+  </dict>
+  <!-- Logging -->
+  <key>StandardErrorPath</key>
+  <string>/directory/to/log.log</string>
+  <key>StandardOutPath</key>
+  <string>/directory/to/log.log</string>
+</dict>
+</plist>

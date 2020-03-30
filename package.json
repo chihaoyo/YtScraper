@@ -1,0 +1,22 @@
+{
+  "name": "yt-scraper",
+  "version": "0.0.1",
+  "description": "This scrapes YouTube.",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "dependencies": {
+    "airtable": "^0.8.1",
+    "axios": "^0.19.2",
+    "mysql": "^2.18.1",
+    "mysql2": "^2.1.0"
+  },
+  "scripts": {
+    "urls-to-sites": "node --experimental-modules urls-to-sites.mjs",
+    "init-sites": "node --experimental-modules init-sites.mjs",
+    "discover": "node --experimental-modules discover.mjs"
+  },
+  "author": "chihao <chihaoyo@gmail.com>",
+  "license": "MIT"
+}
