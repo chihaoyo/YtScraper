@@ -13,6 +13,7 @@ Use node 10.
 - Paste tsv to Airtable
 
 ## Initialize `Site` table
-- `npm run init-sites` - Fetch data from Airtable and insert to `Site` table
+- `npm run init-sites` - Fetch data from Airtable and insert into `Site` table
 
 ## Discover
+- `npm run discover` - Fetch data from YouTube and insert into `SiteSnapshot` table
