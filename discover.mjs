@@ -23,7 +23,7 @@ async function discoverOne(site, pool) {
   let { data, status } = await youtube.get('/channels', {
     params: {
       key: YT.key,
-      part: 'id,snippet,statistics',
+      part: 'id,snippet,statistics,contentDetails',
       id
     }
   })
@@ -43,7 +43,8 @@ async function discoverOne(site, pool) {
         view_count: +channel.statistics.viewCount,
         comment_count: +channel.statistics.commentCount,
         subscriber_count: +channel.statistics.subscriberCount,
-        video_count: +channel.statistics.videoCount
+        video_count: +channel.statistics.videoCount,
+        uploads_playlist_id: channel.contentDetails.relatedPlaylists.uploads
       }
       let sql = mysql.format('INSERT INTO SiteSnapshot SET ?', val)
       let [res] = await pool.query(sql)
@@ -63,7 +64,7 @@ async function discover() {
   for(let site of sites) {
     if(site.type === TYPE_CHANNEL) {
       let data = await discoverOne(site, pool)
-      await pause(1000)
+      await pause()
     }
   }
   await pool.end()

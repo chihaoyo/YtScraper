@@ -1,5 +1,5 @@
 import fs from 'fs'
-import { pause } from './lib/util.mjs'
+import { datetime, pause } from './lib/util.mjs'
 import { parseURL, getChannel, getUser } from './lib/yt.mjs'
 
 function writeToJSONFile(val, fileName) {
@@ -10,12 +10,13 @@ function writeToJSONFile(val, fileName) {
   })
 }
 
-const GET_CHANNEL = false
+const GET_CHANNEL = true
 const GET_USER = true
 
 async function list(urls) {
-  const time = (new Date()).getTime()
-  const part = 'id,snippet,statistics'
+  const date = new Date()
+  const datetimeStr = datetime(date, '-')
+  const part = 'id,snippet,statistics,contentDetails'
   let channels = []
   let users = []
   for(let url of urls) {
@@ -24,14 +25,14 @@ async function list(urls) {
       let channel = await getChannel(id, part)
       if(channel) {
         channels.push(channel)
-        writeToJSONFile(channels, 'data/channels-' + time + '.json') // FIXME: brute force continuous file write
+        writeToJSONFile(channels, 'data/channels-' + datetimeStr + '.json') // FIXME: brute force continuous file write
       }
       await pause()
     } else if(type === 'user' && GET_USER) {
       let user = await getUser(id, part)
       if(user) {
         users.push(user)
-        writeToJSONFile(users, 'data/users-' + time + '.json') // FIXME: brute force continuous file write
+        writeToJSONFile(users, 'data/users-' + datetimeStr + '.json') // FIXME: brute force continuous file write
       }
       await pause()
     }
