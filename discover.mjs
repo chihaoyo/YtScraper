@@ -20,50 +20,69 @@ async function discoverOne(site, pool) {
     console.error(datetimeStr, 'Not a valid YouTube id:', id)
     return null
   }
-  let { data, status } = await youtube.get('/channels', {
-    params: {
-      key: YT.key,
-      part: 'id,snippet,statistics,contentDetails',
-      id
+  let data, status, channel, snapshot
+  try {
+    let res = await youtube.get('/channels', {
+      params: {
+        key: YT.key,
+        part: 'id,snippet,statistics,contentDetails',
+        id
+      }
+    })
+    data = res.data
+    status = res.status
+  } catch(err) {
+    if(err) {
+      console.error(datetimeStr, 'Cannot get channel:', id)
+      console.error(err)
     }
-  })
+  }
   if(data.pageInfo && data.pageInfo.totalResults > 0) {
-    let channel = data.items[0]
-    if(channel.snippet && channel.statistics) {
-      let published_at = (new Date(channel.snippet.publishedAt)).getTime()
-      let val = {
-        site_id: site.site_id,
-        snapshot_at: timestamp / 1000,
-        raw_data: JSON.stringify(channel),
+    channel = data.items[0]
+  }
+  if(channel) {
+    snapshot = {
+      site_id: site.site_id,
+      snapshot_at: timestamp / 1000,
+      raw_data: JSON.stringify(channel)
+    }
+    if(channel.snippet) {
+      Object.assign(snapshot, {
         title: channel.snippet.title,
         description: channel.snippet.description,
         custom_url: channel.snippet.customUrl,
-        published_at: published_at / 1000,
+        published_at: (new Date(channel.snippet.publishedAt)).getTime() / 1000,
         thumbnail_url: channel.snippet.thumbnails.high.url,
+      })
+    }
+    if(channel.statistics) {
+      Object.assign(snapshot, {
         view_count: +channel.statistics.viewCount,
         comment_count: +channel.statistics.commentCount,
         subscriber_count: +channel.statistics.subscriberCount,
-        video_count: +channel.statistics.videoCount,
-        uploads_playlist_id: channel.contentDetails.relatedPlaylists.uploads
-      }
-      let sql = mysql.format('INSERT INTO SiteSnapshot SET ?', val)
-      let [res] = await pool.query(sql)
-      console.log(datetimeStr, res)
-    } else {
-      console.error(datetimeStr, 'Not a valid channel object:', channel)
+        video_count: +channel.statistics.videoCount
+      })
     }
+    if(channel.contentDetails) {
+      Object.assign(snapshot, {
+        uploads_playlist_id: channel.contentDetails.relatedPlaylists.uploads
+      })
+    }
+    let sql = mysql.format('INSERT INTO SiteSnapshot SET ?', snapshot)
+    let [res] = await pool.query(sql)
+    console.log(datetimeStr, res)
+  } else {
+    console.error(datetime, 'No channel data:', id)
   }
-  return data
 }
 
-let channels = []
 async function discover() {
   const pool = await mysql.createPool(MYSQL)
   let [rows, fields] = await pool.query('SELECT * FROM Site')
   let sites = rows
   for(let site of sites) {
     if(site.type === TYPE_CHANNEL) {
-      let data = await discoverOne(site, pool)
+      await discoverOne(site, pool)
       await pause()
     }
   }
