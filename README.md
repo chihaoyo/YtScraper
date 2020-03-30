@@ -12,8 +12,8 @@ Use node 10.
   - Generate tsv
 - Paste tsv to Airtable
 
-## Initialize `Site` table
-- `npm run init-sites` - Fetch data from Airtable and insert into `Site` table
+## Update `Site` table
+- `npm run update-sites` - Fetch data from Airtable and update into `Site` table
 
 ## Discover
 - `npm run discover` - Fetch data from YouTube and insert into `SiteSnapshot` table
