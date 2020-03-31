@@ -72,7 +72,7 @@ async function discoverOne(site, pool) {
     let [res] = await pool.query(sql)
     console.log(datetimeStr, res)
   } else {
-    console.error(datetime, 'No channel data:', id)
+    console.error(datetimeStr, 'No channel data:', id)
   }
 }
 
