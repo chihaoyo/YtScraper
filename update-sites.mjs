@@ -2,14 +2,15 @@ import fs from 'fs'
 import Airtable from 'airtable'
 import mysql from 'mysql2/promise'
 import { pause } from './lib/util.mjs'
+import { TYPE } from './lib/yt.mjs'
 import { AT, MYSQL } from './config.mjs'
 
 const AT_MAX_RECORDS = 100
 const AT_TYPE_CHANNEL = 'YouTube 頻道'
 const AT_TYPE_USER = 'YouTube 帳號'
 const TYPE_MAP = {
-  [AT_TYPE_CHANNEL]: 'channel',
-  [AT_TYPE_USER]: 'user'
+  [AT_TYPE_CHANNEL]: TYPE.channel,
+  [AT_TYPE_USER]: TYPE.user
 }
 
 Airtable.configure({
