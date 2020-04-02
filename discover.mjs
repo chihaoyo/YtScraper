@@ -1,44 +1,35 @@
 import axios from 'axios'
 import { pause, datetime } from './lib/util.mjs'
-import { parseURL } from './lib/yt.mjs'
+import { TYPE, parseURL, getChannel, getUser } from './lib/yt.mjs'
 import { YT, MYSQL } from './config.mjs'
 import mysql from 'mysql2/promise'
 
-const TYPE_CHANNEL = 'channel'
-const TYPE_USER = 'user'
 const youtube = axios.create({
   baseURL: 'https://www.googleapis.com/youtube/v3'
 })
 
-async function discoverOne(site, pool) {
+async function updateSite(site, pool) {
   let date = new Date()
   let datetimeStr = datetime(date)
   let timestamp = date.getTime()
-  console.log(datetimeStr, 'Discover site', site.site_id, site.url)
+  console.log(datetimeStr, 'Update site', site.site_id, site.url)
   let { id } = parseURL(site.url)
   if(!id) {
-    console.error(datetimeStr, 'Not a valid YouTube id:', id)
+    console.error(datetimeStr, 'Not a valid YouTube url:', site.url)
     return null
   }
-  let data, status, channel, snapshot
+  let channel, snapshot
   try {
-    let res = await youtube.get('/channels', {
-      params: {
-        key: YT.key,
-        part: 'id,snippet,statistics,contentDetails',
-        id
-      }
-    })
-    data = res.data
-    status = res.status
+    if(site.type === TYPE.channel) {
+      channel = await getChannel(id, 'id,snippet,statistics,contentDetails')
+    } else if(site.type === TYPE.user) {
+      channel = await getUser(id, 'id,snippet,statistics,contentDetails')
+    }
   } catch(err) {
     if(err) {
-      console.error(datetimeStr, 'Cannot get channel:', id)
+      console.error(datetimeStr, 'Cannot get:', site.type, id)
       console.error(err)
     }
-  }
-  if(data.pageInfo && data.pageInfo.totalResults > 0) {
-    channel = data.items[0]
   }
   if(channel) {
     snapshot = {
@@ -72,20 +63,27 @@ async function discoverOne(site, pool) {
     let [res] = await pool.query(sql)
     console.log(datetimeStr, res)
   } else {
-    console.error(datetimeStr, 'No channel data:', id)
+    console.error(datetimeStr, 'No data:', site.type, id)
   }
+  return snapshot
+}
+
+async function discoverSite(snapshot, pool) {
+  let playlistID = snapshot.uploads_playlist_id
+  console.log(playlistID)
 }
 
 async function discover() {
   const pool = await mysql.createPool(MYSQL)
   let [rows, fields] = await pool.query('SELECT * FROM Site')
   let sites = rows
+  let snapshots = []
   for(let site of sites) {
-    if(site.type === TYPE_CHANNEL) {
-      await discoverOne(site, pool)
-      await pause()
-    }
+    let snapshot = await updateSite(site, pool)
+    snapshots.push(snapshot)
+    await pause()
   }
+  // TODO: discover site
   await pool.end()
 }
 
