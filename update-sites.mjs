@@ -34,10 +34,15 @@ async function update() {
 
   const pool = await mysql.createPool(MYSQL)
   for(let site of sites) {
-    console.log('Query site', site.name, site.url)
-    let [rows, fields] = await pool.query('SELECT * FROM Site WHERE url = ?', site.url)
-    if(rows.length < 1) {
-      console.log('Add site', site.name, site.url)
+    console.log('Query site', site.airtable_id, site.name, site.url)
+    let [rows, fields] = await pool.query('SELECT * FROM Site WHERE airtable_id = ?', site.airtable_id)
+    if(rows.length > 0) {
+      console.log('Update site',  site.airtable_id, site.name, site.url)
+      let sql = mysql.format('UPDATE Site SET ? WHERE airtable_id = ?', [site, site.airtable_id])
+      let [res] = await pool.query(sql)
+      console.log(res)
+    } else {
+      console.log('Add site',  site.airtable_id, site.name, site.url)
       let [res] = await pool.query('INSERT INTO Site SET ?', site)
       console.log(res)
     }
