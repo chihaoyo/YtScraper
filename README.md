@@ -50,7 +50,7 @@ For each `Article`...
   - `first_snapshot_at` if first snapshot
   - `last_snapshot_at` with current time
   - `next_snapshot_at`
-    - If `ArticleSnapshot.published_at` is more than 2 months ago
-    - If `snapshot_count` < 3... current time + 1 day
+    - If `ArticleSnapshot.published_at` < current time - 2 months... 0
+    - Else if `snapshot_count` < 3... current time + 1 day
     - Else if < 4... current time + 4 days
     - Else... 0
