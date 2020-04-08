@@ -15,7 +15,8 @@
   "scripts": {
     "urls-to-sites": "node --experimental-modules urls-to-sites.mjs",
     "update-sites": "node --experimental-modules update-sites.mjs",
-    "discover": "node --experimental-modules discover.mjs"
+    "discover": "node --experimental-modules discover.mjs",
+    "update": "node --experimental-modules update.mjs"
   },
   "author": "chihao <chihaoyo@gmail.com>",
   "license": "MIT"
