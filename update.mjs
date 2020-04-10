@@ -3,7 +3,7 @@ import { TYPE, parseURL, getVideoURL, getVideoID, getThumbnailURL, getChannel, g
 import { YT, MYSQL } from './config.mjs'
 import mysql from 'mysql2/promise'
 
-const MAX_ARTICLE_UPDATE = 200
+const MAX_ARTICLE_UPDATE = 10 // round robin
 
 async function updateArticlesOfSite(site, pool) {
   let date = new Date()
@@ -73,10 +73,10 @@ async function updateArticlesOfSite(site, pool) {
       try {
         let insSQL = mysql.format('INSERT INTO ArticleSnapshot SET ?', snapshot)
         let [insRes] = await pool.query(insSQL)
-        console.log('insert', insRes)
+        console.log(insRes)
         let updSQL = mysql.format('UPDATE Article SET ? WHERE article_id = ?', [articleUpdates, article.article_id])
         let [updRes] = await pool.query(updSQL)
-        console.log('update', updRes)
+        console.log(updRes)
       } catch(e) {
         console.error(e)
       }
