@@ -130,24 +130,24 @@ async function discoverSite(snapshot, pool) {
 }
 
 const UPDATE_SITES = false
-const DISCOVER_SITES = false
+const DISCOVER_SITES = true
 
-async function discover() {
+async function discover(siteID) {
   const pool = await mysql.createPool(MYSQL)
   let snapshots = []
   if(UPDATE_SITES) {
     console.log(datetime(new Date()), 'update site')
     let [rows] = await pool.query('SELECT * FROM Site')
-    let sites = rows
+    let sites = siteID ? rows.filter(row => row.site_id === siteID) : rows
     for(let site of sites) {
       let snapshot = await updateSite(site, pool)
       snapshots.push(snapshot)
       await pause()
     }
   } else {
-    console.log(datetime(new Date()), 'get latest site snapshots')
+    console.log(datetime(new Date()), 'get latest site snapshot')
     let [rows] = await pool.query('SELECT * FROM SiteSnapshot WHERE (site_id, snapshot_at) IN (SELECT site_id, MAX(snapshot_at) FROM SiteSnapshot GROUP BY site_id ORDER BY MAX(snapshot_at))')
-    snapshots = rows
+    snapshots = siteID ? rows.filter(row => row.site_id === siteID) : rows
   }
   if(DISCOVER_SITES) {
     console.log(datetime(new Date()), 'discover site')
@@ -158,4 +158,9 @@ async function discover() {
   await pool.end()
 }
 
-discover()
+let args = process.argv.slice(2)
+let siteID = null
+if(args.length > 0) {
+  siteID = +args[0]
+}
+discover(siteID)
