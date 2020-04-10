@@ -81,7 +81,7 @@ async function discoverSite(snapshot, pool) {
   while(nextPageToken !== undefined) {
     let date = new Date()
     let datetimeStr = datetime(date)
-    let timestamp = Math.floor(date.getTime())
+    let timestamp = Math.floor(date.getTime() / 1000)
     // get videos
     try {
       ({ nextPageToken, totalCount, items } = await getPlaylistItems(playlistID, (nextPageToken !== -1 ? nextPageToken : null), part))
@@ -129,7 +129,7 @@ async function discoverSite(snapshot, pool) {
   }
 }
 
-const UPDATE_SITES = true
+const UPDATE_SITES = false
 const DISCOVER_SITES = false
 
 async function discover() {
