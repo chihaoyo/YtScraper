@@ -105,7 +105,8 @@ async function discoverSite(snapshot, pool) {
       let article = {
         site_id: snapshot.site_id,
         url: getVideoURL(item.id),
-        article_type: DB_ARTICLE_TYPE.video
+        article_type: DB_ARTICLE_TYPE.video,
+        created_at: timestamp
       }
       sql = mysql.format('SELECT article_id FROM Article WHERE `site_id` = ? AND `url` = ?', [article.site_id, article.url])
       let [rows] = await pool.query(sql)
