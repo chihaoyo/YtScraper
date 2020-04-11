@@ -16,7 +16,7 @@ async function updateSite(site, pool) {
   let datetimeStr = datetime(date)
   let timestamp = Math.floor(date.getTime() / 1000)
   console.log(datetimeStr, 'update site', site.site_id, site.url)
-  let { id } = parseURL(site.url)
+  let { id } = youtube.parseURL(site.url)
   if(!id) {
     console.error(datetimeStr, 'not a valid YouTube url', site.url)
     return null
@@ -39,7 +39,7 @@ async function updateSite(site, pool) {
         description: channel.snippet.description,
         custom_url: channel.snippet.customUrl,
         published_at: Math.floor((new Date(channel.snippet.publishedAt)).getTime() / 1000),
-        thumbnail_url: getThumbnailURL(channel.snippet.thumbnails),
+        thumbnail_url: youtube.getThumbnailURL(channel.snippet.thumbnails),
       })
     }
     if(channel.statistics) {
@@ -95,7 +95,7 @@ async function discoverSite(snapshot, pool) {
       for(let item of items) {
         let article = {
           site_id: snapshot.site_id,
-          url: getVideoURL(item.id),
+          url: youtube.getVideoURL(item.id),
           article_type: DB_ARTICLE_TYPE.video,
           created_at: timestamp
         }
