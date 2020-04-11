@@ -117,10 +117,10 @@ async function discoverSite(snapshot, pool) {
       }
       sql = mysql.format('UPDATE Site SET site_info = ?, last_crawl_at = ? WHERE site_id = ?', [JSON.stringify(siteInfo), timestamp, snapshot.site_id])
       let [updRes] = await pool.query(sql)
-      console.log(updateRes)
+      console.log(updRes)
     }
     await pause()
-  }
+  } // end of paging loop
 }
 
 const UPDATE_SITES = false
