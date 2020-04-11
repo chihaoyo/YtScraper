@@ -1,5 +1,5 @@
 import { pause, datetime } from './lib/util.mjs'
-import { TYPE, parseURL, getVideoURL, getThumbnailURL, getChannel, getUser, getPlaylistItems, getVideo } from './lib/yt.mjs'
+import * as youtube from './lib/yt.mjs'
 import { YT, MYSQL } from './config.mjs'
 import mysql from 'mysql2/promise'
 
@@ -22,17 +22,10 @@ async function updateSite(site, pool) {
     return null
   }
   let channel, snapshot
-  try {
-    if(site.type === TYPE.channel) {
-      channel = await getChannel(id, 'id,snippet,statistics,contentDetails')
-    } else if(site.type === TYPE.user) {
-      channel = await getUser(id, 'id,snippet,statistics,contentDetails')
-    }
-  } catch(err) {
-    if(err) {
-      console.error(datetimeStr, 'cannot get', site.type, id)
-      console.error(err)
-    }
+  if(site.type === TYPE.channel) {
+    channel = await youtube.getChannel(id, 'id,snippet,statistics,contentDetails')
+  } else if(site.type === TYPE.user) {
+    channel = await youtube.getUser(id, 'id,snippet,statistics,contentDetails')
   }
   if(channel) {
     snapshot = {
@@ -82,9 +75,10 @@ async function discoverSite(snapshot, pool) {
     let date = new Date()
     let datetimeStr = datetime(date)
     let timestamp = Math.floor(date.getTime() / 1000)
-    // get videos
-    try {
-      ({ nextPageToken, totalCount, items } = await getPlaylistItems(playlistID, (nextPageToken !== -1 ? nextPageToken : null), part))
+    // get videos (and maybe other items) in channel upload playlist
+    let playlistItems = await youtube.getPlaylistItems(playlistID, (nextPageToken !== -1 ? nextPageToken : null), part)
+    if(playlistItems) {
+      ({ nextPageToken, totalCount, items } = playlistItems)
       items = items.filter(item => item.snippet.resourceId.kind === KIND.video).map(item => {
         return {
           id: item.snippet.resourceId.videoId,
@@ -96,36 +90,35 @@ async function discoverSite(snapshot, pool) {
           position: item.snippet.position
         }
       })
-    } catch(err) {
-      console.error(err)
-    }
-    // create Article
-    let sql, siteInfo
-    for(let item of items) {
-      let article = {
-        site_id: snapshot.site_id,
-        url: getVideoURL(item.id),
-        article_type: DB_ARTICLE_TYPE.video,
-        created_at: timestamp
+      // create Article
+      let sql, siteInfo
+      for(let item of items) {
+        let article = {
+          site_id: snapshot.site_id,
+          url: getVideoURL(item.id),
+          article_type: DB_ARTICLE_TYPE.video,
+          created_at: timestamp
+        }
+        sql = mysql.format('SELECT article_id FROM Article WHERE `site_id` = ? AND `url` = ?', [article.site_id, article.url])
+        let [rows] = await pool.query(sql)
+        if(rows.length < 1) {
+          sql = mysql.format('INSERT INTO Article SET ?', article)
+          console.log(sql)
+          let [insRes] = await pool.query(sql)
+          console.log(insRes)
+        }
       }
-      sql = mysql.format('SELECT article_id FROM Article WHERE `site_id` = ? AND `url` = ?', [article.site_id, article.url])
-      let [rows] = await pool.query(sql)
-      if(rows.length < 1) {
-        sql = mysql.format('INSERT INTO Article SET ?', article)
-        console.log(sql)
-        let [res] = await pool.query(sql)
-        console.log(res)
-      }
-    }
-    itemCount += items.length
-    console.log(datetimeStr, 'discover site', snapshot.site_id, playlistID, nextPageToken, itemCount, totalCount)
+      itemCount += items.length
+      console.log(datetimeStr, 'discover site', snapshot.site_id, playlistID, nextPageToken, itemCount, totalCount)
 
-    siteInfo = {
-      playlistID,
-      nextPageToken
+      siteInfo = {
+        playlistID,
+        nextPageToken
+      }
+      sql = mysql.format('UPDATE Site SET site_info = ?, last_crawl_at = ? WHERE site_id = ?', [JSON.stringify(siteInfo), timestamp, snapshot.site_id])
+      let [updRes] = await pool.query(sql)
+      console.log(updateRes)
     }
-    sql = mysql.format('UPDATE Site SET site_info = ?, last_crawl_at = ? WHERE site_id = ?', [JSON.stringify(siteInfo), timestamp, snapshot.site_id])
-    let [res] = await pool.query(sql)
     await pause()
   }
 }
