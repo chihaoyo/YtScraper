@@ -1,5 +1,5 @@
 import { pause, datetime } from './lib/util.mjs'
-import { TYPE, parseURL, getVideoURL, getVideoID, getThumbnailURL, getChannel, getUser, getPlaylistItems, getVideo } from './lib/yt.mjs'
+import * as youtube from './lib/yt.mjs'
 import { YT, MYSQL } from './config.mjs'
 import mysql from 'mysql2/promise'
 
@@ -19,13 +19,9 @@ async function updateArticlesOfSite(site, pool) {
     timestamp = Math.floor(date.getTime() / 1000)
 
     const part = 'id,snippet,statistics'
-    let id = getVideoID(article.url)
+    let id = youtube.getVideoID(article.url)
     let video, snapshot
-    try {
-      video = await getVideo(id, part)
-    } catch(err) {
-      console.error(err)
-    }
+    video = await youtube.getVideo(id, part)
     if(video) {
       // prepare article snapshot
       snapshot = {
@@ -38,7 +34,7 @@ async function updateArticlesOfSite(site, pool) {
           title: video.snippet.title,
           description: video.snippet.description,
           published_at: Math.floor((new Date(video.snippet.publishedAt)).getTime() / 1000),
-          thumbnail_url: getThumbnailURL(video.snippet.thumbnails)
+          thumbnail_url: youtube.getThumbnailURL(video.snippet.thumbnails)
         })
       }
       if(video.statistics) {
@@ -83,7 +79,7 @@ async function updateArticlesOfSite(site, pool) {
     } else {
       console.error(datetimeStr, 'no data', id)
     }
-    await pause(250)
+    await pause()
   } // end of article loop
 }
 
