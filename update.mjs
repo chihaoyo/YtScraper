@@ -67,7 +67,7 @@ async function updateArticlesOfSite(site, pool) {
   }
 
   for(let article of articles) {
-    console.log('update article', article.article_id, article.url)
+    console.log('update article', article.article_id, 'of site', site.site_id, article.url)
     date = new Date()
     datetimeStr = datetime(date)
     timestamp = Math.floor(date.getTime() / 1000)
