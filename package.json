@@ -18,7 +18,8 @@
     "import-sites": "node --experimental-modules import-sites.mjs",
     "snap-sites": "node --experimental-modules snap-sites.mjs",
     "discover": "node --experimental-modules discover.mjs",
-    "update": "node --experimental-modules update.mjs"
+    "update": "node --experimental-modules update.mjs",
+    "poke": "node --experimental-modules poke.mjs"
   },
   "author": "chihao <chihaoyo@gmail.com>",
   "license": "MIT"
