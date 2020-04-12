@@ -51,9 +51,12 @@ async function snapSite(site, pool) {
     date = new Date()
     datetimeStr = datetime(date)
     timestamp = Math.floor(date.getTime() / 1000)
-    let sql = mysql.format('INSERT INTO SiteSnapshot SET ?', snapshot)
-    let [res] = await pool.query(sql)
-    console.log(datetimeStr, res)
+    let [insRes] = await pool.query('INSERT INTO SiteSnapshot SET ?', snapshot)
+    let siteInfo = {
+      playlistID: snapshot.uploads_playlist_id
+    }
+    let [updRes] = await pool.query('UPDATE Site SET site_info = ? WHERE site_id = ?', [JSON.stringify(siteInfo), site.site_id])
+    console.log(datetimeStr, insRes, updRes)
   } else {
     console.error(datetimeStr, 'no data', site.type, id)
   }
