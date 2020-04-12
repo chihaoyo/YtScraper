@@ -1,46 +1,9 @@
-import { pause, datetime } from './lib/util.mjs'
+import { pause, datetime, ANSWERS, prompt } from './lib/util.mjs'
 import * as youtube from './lib/yt.mjs'
 import { YT, MYSQL } from './config.mjs'
 import mysql from 'mysql2/promise'
-import inquirer from 'inquirer'
 
 const MAX_ARTICLE_UPDATE = 10 // round robin
-
-let ask = true
-let ANSWERS = {
-  yes: 'yes',
-  stopAsking: 'stopAsking',
-  skip: 'skip',
-  abort: 'abort',
-}
-async function prompt() {
-  let res = await inquirer.prompt([
-    {
-      type: 'list',
-      name: 'input',
-      message: 'Go?',
-      choices: [
-        {
-          name: 'Yes.',
-          value: ANSWERS.yes
-        },
-        {
-          name: 'Stop asking.',
-          value: ANSWERS.stopAsking
-        },
-        {
-          name: 'Skip this site.',
-          value: ANSWERS.skip
-        },
-        {
-          name: 'Abort.',
-          value: ANSWERS.abort
-        }
-      ]
-    }
-  ])
-  return res.input
-}
 
 async function updateArticlesOfSite(site, pool) {
   let date = new Date()
@@ -54,8 +17,8 @@ async function updateArticlesOfSite(site, pool) {
   }
   console.log('articles', articles.map(a => a.article_id).join(' '))
 
-  let answer = ANSWERS.yes
-  if(ask) {
+  answer = ANSWERS.yes
+  if(isInteractive && ask) {
     answer = await prompt()
   }
   if(answer === ANSWERS.stopAsking) {
@@ -137,19 +100,23 @@ async function updateArticlesOfSite(site, pool) {
   } // end of article loop
 }
 
-const UPDATE_ARTICLES = true
-
 async function update() {
   const pool = await mysql.createPool(MYSQL)
-  if(UPDATE_ARTICLES) {
-    let [rows] = await pool.query('SELECT * FROM Site')
-    let sites = rows
-    for(let site of sites) {
-      await updateArticlesOfSite(site, pool)
-      await pause()
-    }
+  let [rows] = await pool.query('SELECT * FROM Site')
+  let sites = rows
+  for(let site of sites) {
+    await updateArticlesOfSite(site, pool)
+    await pause()
   }
   await pool.end()
 }
 
+let args = process.argv.slice(2)
+let isInteractive = false
+let answer = null
+let ask = false
+if(args.includes('-i')) { // --interactive
+  isInteractive = true
+  ask = true
+}
 update()
