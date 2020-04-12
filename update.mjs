@@ -3,37 +3,39 @@ import * as youtube from './lib/yt.mjs'
 import { YT, MYSQL } from './config.mjs'
 import mysql from 'mysql2/promise'
 
-const MAX_ARTICLE_UPDATE = 10 // round robin
+const PAGE = 50
+const MAX_UPDATES_PER_SITE = 500 // round robin
 
 async function updateArticlesOfSite(site, pool) {
   let date = new Date()
   let datetimeStr = datetime(date)
   let timestamp = Math.floor(date.getTime() / 1000)
-  let [rows] = await pool.query('SELECT * FROM Article WHERE site_id = ? AND next_snapshot_at != 0 AND next_snapshot_at <= ? ORDER BY next_snapshot_at ASC, article_id ASC LIMIT ?', [site.site_id, timestamp, MAX_ARTICLE_UPDATE])
+  let [rows] = await pool.query('SELECT * FROM Article WHERE site_id = ? AND next_snapshot_at != 0 AND next_snapshot_at <= ? ORDER BY next_snapshot_at ASC, article_id ASC LIMIT ?', [site.site_id, timestamp, MAX_UPDATES_PER_SITE])
   let articles = rows
-  console.log('update', articles.length, 'articles of site', site.site_id)
+  console.log(datetimeStr, 'update', articles.length, 'articles of site', site.site_id)
   if(articles.length < 1) {
     return
   }
-  console.log('articles', articles.map(a => a.article_id).join(' '))
+  console.log(datetimeStr, articles.length, 'articles', articles[0].article_id, articles[articles.length - 1].article_id)
 
-  answer = ANSWERS.yes
-  if(isInteractive && ask) {
-    answer = await prompt()
-  }
-  if(answer === ANSWERS.stopAsking) {
-    ask = false
-  } else if(answer === ANSWERS.skip) {
-    return
-  } else if(answer === ANSWERS.abort) {
-    process.abort()
-  }
-
+  let counter = 0
   for(let article of articles) {
-    console.log('update article', article.article_id, 'of site', site.site_id, article.url)
+    answer = ANSWERS.yes
+    if(isInteractive && ask && counter % PAGE === 0) {
+      answer = await prompt()
+      if(answer === ANSWERS.stopAsking) {
+        ask = false
+      } else if(answer === ANSWERS.skip) {
+        break
+      } else if(answer === ANSWERS.abort) {
+        process.abort()
+      }
+    }
+
     date = new Date()
     datetimeStr = datetime(date)
     timestamp = Math.floor(date.getTime() / 1000)
+    console.log(datetimeStr, (counter + 1), articles.length, 'update article', article.article_id, 'of site', site.site_id, article.url)
 
     const part = 'id,snippet,statistics'
     let id = youtube.getVideoID(article.url)
@@ -96,14 +98,16 @@ async function updateArticlesOfSite(site, pool) {
     } else {
       console.error(datetimeStr, 'no data', id)
     }
+    counter += 1
     await pause()
   } // end of article loop
+  console.log(datetime(), counter, 'articles updated')
 }
 
-async function update() {
+async function update(siteID) {
   const pool = await mysql.createPool(MYSQL)
   let [rows] = await pool.query('SELECT * FROM Site')
-  let sites = rows
+  let sites = siteID ? rows.filter(row => row.site_id === siteID) : rows
   for(let site of sites) {
     await updateArticlesOfSite(site, pool)
     await pause()
@@ -112,11 +116,16 @@ async function update() {
 }
 
 let args = process.argv.slice(2)
+let siteID = null
 let isInteractive = false
 let answer = null
 let ask = false
-if(args.includes('-i')) { // --interactive
+if(args.includes('-i')) {
   isInteractive = true
   ask = true
+  args = args.filter(arg => arg !== '-i')
 }
-update()
+if(args.length > 0) {
+  siteID = +args[0]
+}
+update(siteID)
