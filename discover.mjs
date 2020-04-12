@@ -11,9 +11,14 @@ const DB_ARTICLE_TYPE = {
   video: 'YTVideo'
 }
 
-async function discoverSite(snapshot, pool) {
-  let playlistID = snapshot.uploads_playlist_id
-  let nextPageToken = -1
+async function discoverSite(site, pool) {
+  let siteInfo = JSON.parse(site.site_info)
+  let playlistID = siteInfo.playlistID
+  let nextPageToken = siteInfo.nextPageToken ? siteInfo.nextPageToken : -1
+
+  let [res] = await pool.query('SELECT count(*) AS count FROM Article WHERE site_id = ?', site.site_id)
+  let articleCount = res[0].count
+
   let totalCount = 0
   let itemCount = 0
   let items = []
@@ -23,6 +28,7 @@ async function discoverSite(snapshot, pool) {
     let datetimeStr = datetime(date)
     let timestamp = Math.floor(date.getTime() / 1000)
     // get videos (and maybe other items) in channel upload playlist
+    console.log(datetimeStr, 'discover site', site.site_id, playlistID, nextPageToken)
     let playlistItems = await youtube.getPlaylistItems(playlistID, (nextPageToken !== -1 ? nextPageToken : null), part)
     if(playlistItems) {
       ({ nextPageToken, totalCount, items } = playlistItems)
@@ -41,7 +47,7 @@ async function discoverSite(snapshot, pool) {
       let sql, siteInfo
       for(let item of items) {
         let article = {
-          site_id: snapshot.site_id,
+          site_id: site.site_id,
           url: youtube.getVideoURL(item.id),
           article_type: DB_ARTICLE_TYPE.video,
           created_at: timestamp
@@ -50,49 +56,41 @@ async function discoverSite(snapshot, pool) {
         let [rows] = await pool.query(sql)
         if(rows.length < 1) {
           sql = mysql.format('INSERT INTO Article SET ?', article)
-          console.log(sql)
           let [insRes] = await pool.query(sql)
-          console.log(insRes)
+          console.log('create article', insRes.insertId, article.url)
         }
       }
       itemCount += items.length
-      console.log(datetimeStr, 'discover site', snapshot.site_id, playlistID, nextPageToken, itemCount, totalCount)
+      console.log(datetimeStr, 'discover site', site.site_id, itemCount, (itemCount + articleCount), totalCount)
 
       siteInfo = {
         playlistID,
         nextPageToken
       }
-      sql = mysql.format('UPDATE Site SET site_info = ?, last_crawl_at = ? WHERE site_id = ?', [JSON.stringify(siteInfo), timestamp, snapshot.site_id])
+      sql = mysql.format('UPDATE Site SET site_info = ?, last_crawl_at = ? WHERE site_id = ?', [JSON.stringify(siteInfo), timestamp, site.site_id])
       let [updRes] = await pool.query(sql)
-      console.log(updRes)
+      console.log('update site', site.site_id, siteInfo, updRes)
     }
-    await pause()
+    await pause(500)
   } // end of paging loop
 }
 
 async function discover(siteID) {
   const pool = await mysql.createPool(MYSQL)
-  let snapshots = []
 
-  console.log(datetime(), 'get latest site snapshots')
-  let [rows] = await pool.query('SELECT * FROM SiteSnapshot WHERE (site_id, snapshot_at) IN (SELECT site_id, MAX(snapshot_at) FROM SiteSnapshot GROUP BY site_id ORDER BY MAX(snapshot_at))')
-  snapshots = siteID ? rows.filter(row => row.site_id === siteID) : rows
+  console.log(datetime(), 'get sites')
+  let [rows] = await pool.query('SELECT * FROM Site')
+  let sites = siteID ? rows.filter(row => row.site_id === siteID) : rows
 
   console.log(datetime(), 'discover sites')
-  for(let snapshot of snapshots) {
-    await discoverSite(snapshot, pool)
+  for(let site of sites) {
+    await discoverSite(site, pool)
   }
   await pool.end()
 }
 
 let args = process.argv.slice(2)
-let siteID = null
-let isInteractive = false
-let answer = null
-if(args.includes('-i')) {
-  isInteractive = true
-  args = args.filter(arg => arg !== '-i')
-}
+let siteID
 if(args.length > 0) {
   siteID = +args[0]
 }
