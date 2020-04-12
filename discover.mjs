@@ -1,6 +1,6 @@
 import { pause, datetime } from './lib/util.mjs'
 import * as youtube from './lib/yt.mjs'
-import { YT, MYSQL } from './config.mjs'
+import { MYSQL } from './config.mjs'
 import mysql from 'mysql2/promise'
 
 const KIND = {
