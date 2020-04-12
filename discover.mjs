@@ -11,59 +11,6 @@ const DB_ARTICLE_TYPE = {
   video: 'YTVideo'
 }
 
-async function updateSite(site, pool) {
-  let date = new Date()
-  let datetimeStr = datetime(date)
-  let timestamp = Math.floor(date.getTime() / 1000)
-  console.log(datetimeStr, 'update site', site.site_id, site.url)
-  let { id } = youtube.parseURL(site.url)
-  if(!id) {
-    console.error(datetimeStr, 'not a valid YouTube url', site.url)
-    return null
-  }
-  let channel, snapshot
-  if(site.type === TYPE.channel) {
-    channel = await youtube.getChannel(id, 'id,snippet,statistics,contentDetails')
-  } else if(site.type === TYPE.user) {
-    channel = await youtube.getUser(id, 'id,snippet,statistics,contentDetails')
-  }
-  if(channel) {
-    snapshot = {
-      site_id: site.site_id,
-      snapshot_at: timestamp,
-      raw_data: JSON.stringify(channel)
-    }
-    if(channel.snippet) {
-      Object.assign(snapshot, {
-        title: channel.snippet.title,
-        description: channel.snippet.description,
-        custom_url: channel.snippet.customUrl,
-        published_at: Math.floor((new Date(channel.snippet.publishedAt)).getTime() / 1000),
-        thumbnail_url: youtube.getThumbnailURL(channel.snippet.thumbnails),
-      })
-    }
-    if(channel.statistics) {
-      Object.assign(snapshot, {
-        view_count: +channel.statistics.viewCount,
-        comment_count: +channel.statistics.commentCount,
-        subscriber_count: +channel.statistics.subscriberCount,
-        video_count: +channel.statistics.videoCount
-      })
-    }
-    if(channel.contentDetails) {
-      Object.assign(snapshot, {
-        uploads_playlist_id: channel.contentDetails.relatedPlaylists.uploads
-      })
-    }
-    let sql = mysql.format('INSERT INTO SiteSnapshot SET ?', snapshot)
-    let [res] = await pool.query(sql)
-    console.log(datetimeStr, res)
-  } else {
-    console.error(datetimeStr, 'no data', site.type, id)
-  }
-  return snapshot
-}
-
 async function discoverSite(snapshot, pool) {
   let playlistID = snapshot.uploads_playlist_id
   let nextPageToken = -1
@@ -123,37 +70,29 @@ async function discoverSite(snapshot, pool) {
   } // end of paging loop
 }
 
-const UPDATE_SITES = false
-const DISCOVER_SITES = true
-
 async function discover(siteID) {
   const pool = await mysql.createPool(MYSQL)
   let snapshots = []
-  if(UPDATE_SITES) {
-    console.log(datetime(new Date()), 'update site')
-    let [rows] = await pool.query('SELECT * FROM Site')
-    let sites = siteID ? rows.filter(row => row.site_id === siteID) : rows
-    for(let site of sites) {
-      let snapshot = await updateSite(site, pool)
-      snapshots.push(snapshot)
-      await pause()
-    }
-  } else {
-    console.log(datetime(new Date()), 'get latest site snapshot')
-    let [rows] = await pool.query('SELECT * FROM SiteSnapshot WHERE (site_id, snapshot_at) IN (SELECT site_id, MAX(snapshot_at) FROM SiteSnapshot GROUP BY site_id ORDER BY MAX(snapshot_at))')
-    snapshots = siteID ? rows.filter(row => row.site_id === siteID) : rows
-  }
-  if(DISCOVER_SITES) {
-    console.log(datetime(new Date()), 'discover site')
-    for(let snapshot of snapshots) {
-      await discoverSite(snapshot, pool)
-    }
+
+  console.log(datetime(), 'get latest site snapshots')
+  let [rows] = await pool.query('SELECT * FROM SiteSnapshot WHERE (site_id, snapshot_at) IN (SELECT site_id, MAX(snapshot_at) FROM SiteSnapshot GROUP BY site_id ORDER BY MAX(snapshot_at))')
+  snapshots = siteID ? rows.filter(row => row.site_id === siteID) : rows
+
+  console.log(datetime(), 'discover sites')
+  for(let snapshot of snapshots) {
+    await discoverSite(snapshot, pool)
   }
   await pool.end()
 }
 
 let args = process.argv.slice(2)
 let siteID = null
+let isInteractive = false
+let answer = null
+if(args.includes('-i')) {
+  isInteractive = true
+  args = args.filter(arg => arg !== '-i')
+}
 if(args.length > 0) {
   siteID = +args[0]
 }
