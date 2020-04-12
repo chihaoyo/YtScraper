@@ -12,11 +12,11 @@ Use node 10.
   - Generate tsv
 - Paste tsv to Airtable
 
-## Update `Site` table
-`npm run update-sites`
+## Import to `Site` table
+`npm run import-sites`
 
-- Fetch site data from Airtable and update into `Site` table
-  - Use `airtable_id` to determine if site is already in `Site` table
+- Import entries from Airtable and update the `Site` table accordingly
+  - Use `airtable_id` to determine if entry is already in `Site` table
 
 ## Discover
 `npm run discover`

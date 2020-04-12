@@ -15,7 +15,7 @@
   },
   "scripts": {
     "urls-to-sites": "node --experimental-modules urls-to-sites.mjs",
-    "update-sites": "node --experimental-modules update-sites.mjs",
+    "import-sites": "node --experimental-modules import-sites.mjs",
     "discover": "node --experimental-modules discover.mjs",
     "update": "node --experimental-modules update.mjs"
   },
