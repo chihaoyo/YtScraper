@@ -16,6 +16,7 @@
   "scripts": {
     "urls-to-sites": "node --experimental-modules urls-to-sites.mjs",
     "import-sites": "node --experimental-modules import-sites.mjs",
+    "snap-sites": "node --experimental-modules snap-sites.mjs",
     "discover": "node --experimental-modules discover.mjs",
     "update": "node --experimental-modules update.mjs"
   },

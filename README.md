@@ -18,16 +18,17 @@ Use node 10.
 - Import entries from Airtable and update the `Site` table accordingly
   - Use `airtable_id` to determine if entry is already in `Site` table
 
-## Discover
-`npm run discover`
+## Snap site
+`npm run snap-site`
 
-### Update site
 For each `Site`...
 - Fetch channel data from YouTube and create new `SiteSnapshot`
 
-### Discover site
+## Discover
+`npm run discover`
+
 For each `Site`...
-- Use latest `SiteSnapshot` of the `Site`
+- Get latest `SiteSnapshot` of the `Site`
 - Fetch videos in playlist `SiteSnapshot.uploads_playlist_id`
 
 For each video of each page of playlist...
