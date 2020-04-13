@@ -19,13 +19,13 @@ Use node 10.
   - Use `airtable_id` to determine if entry is already in `Site` table
 
 ## Snap site
-`npm run snap-site`
+`npm run snap-site -- [site_id]`
 
 For each `Site`...
 - Fetch channel data from YouTube and create new `SiteSnapshot`
 
 ## Discover
-`npm run discover`
+`npm run discover -- [site_id]`
 
 For each `Site`...
 - Get latest `SiteSnapshot` of the `Site`
@@ -37,7 +37,7 @@ For each video of each page of playlist...
 - Update `Site.last_crawl_at` with current time
 
 ## Update
-`npm run update`
+`npm run update -- [-i] [start_site_id]`
 
 Get `Article` for each `Site`...
 - `next_snapshot_at` != 0 && <= current time
