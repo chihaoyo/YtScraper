@@ -48,7 +48,7 @@ async function discoverSite(site, pool) {
       for(let item of items) {
         let article = {
           site_id: site.site_id,
-          url: youtube.getVideoURL(item.id),
+          url: item.id,
           article_type: DB_ARTICLE_TYPE.video,
           created_at: timestamp
         }

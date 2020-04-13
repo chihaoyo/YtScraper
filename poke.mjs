@@ -11,7 +11,7 @@ async function poke(playlistID, pageToken) {
   let { nextPageToken, totalCount, items } = await youtube.getPlaylistItems(playlistID, pageToken, part)
   for(let item of items) {
     try {
-      let [res] = await pool.query('SELECT * FROM Article WHERE url = ?', youtube.getVideoURL(item.snippet.resourceId.videoId))
+      let [res] = await pool.query('SELECT * FROM Article WHERE url = ?', item.snippet.resourceId.videoId)
       console.log(item.snippet.title, item.snippet.resourceId, (res.length > 0 ? res[0].article_id : '-'))
     } catch(e) {
       console.error(e)

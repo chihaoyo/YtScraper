@@ -38,7 +38,7 @@ async function updateArticlesOfSite(site, pool) {
     console.log(datetimeStr, (counter + 1), articles.length, 'update article', article.article_id, 'of site', site.site_id, article.url)
 
     const part = 'id,snippet,statistics'
-    let id = youtube.getVideoID(article.url)
+    let id = article.url
     let video, snapshot
     video = await youtube.getVideo(id, part)
     if(video) {
