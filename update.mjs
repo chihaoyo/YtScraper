@@ -3,10 +3,10 @@ import * as youtube from './lib/yt.mjs'
 import { MYSQL } from './config.mjs'
 import mysql from 'mysql2/promise'
 
-const PAGE = 50
-const MAX_UPDATES_PER_SITE = 500 // round robin
+const MAX_UPDATES_PER_SITE = 50 // round robin
 
 async function updateArticlesOfSite(site, pool) {
+  let keepGoing = true
   let date = new Date()
   let datetimeStr = datetime(date)
   let timestamp = Math.floor(date.getTime() / 1000)
@@ -14,24 +14,25 @@ async function updateArticlesOfSite(site, pool) {
   let articles = rows
   console.log(datetimeStr, 'update', articles.length, 'articles of site', site.site_id)
   if(articles.length < 1) {
-    return
+    return keepGoing
   }
-  console.log(datetimeStr, articles.length, 'articles', articles[0].article_id, articles[articles.length - 1].article_id)
+  console.log(datetimeStr, articles.length, 'articles', (articles[0].article_id + '...' + articles[articles.length - 1].article_id))
+
+  answer = ANSWERS.yes
+  if(isInteractive && ask) {
+    answer = await prompt()
+    if(answer === ANSWERS.stopAsking) {
+      ask = false
+    } else if(answer === ANSWERS.abort) {
+      keepGoing = false
+    }
+  }
+  if([ANSWERS.skip, ANSWERS.abort].includes(answer)) {
+    return keepGoing
+  }
 
   let counter = 0
   for(let article of articles) {
-    answer = ANSWERS.yes
-    if(isInteractive && ask && counter % PAGE === 0) {
-      answer = await prompt()
-      if(answer === ANSWERS.stopAsking) {
-        ask = false
-      } else if(answer === ANSWERS.skip) {
-        break
-      } else if(answer === ANSWERS.abort) {
-        process.abort()
-      }
-    }
-
     date = new Date()
     datetimeStr = datetime(date)
     timestamp = Math.floor(date.getTime() / 1000)
@@ -101,16 +102,21 @@ async function updateArticlesOfSite(site, pool) {
     counter += 1
     await pause()
   } // end of article loop
-  console.log(datetime(), counter, 'articles updated')
+  console.log(datetime(), counter, 'articles of site', site.site_id, 'updated')
+  return keepGoing
 }
 
 async function update(siteID) {
   const pool = await mysql.createPool(MYSQL)
-  let [rows] = await pool.query('SELECT * FROM Site')
-  let sites = siteID ? rows.filter(row => row.site_id === siteID) : rows
+  let sql = mysql.format('SELECT * FROM Site WHERE site_id >= ?', (siteID ? siteID : 0))
+  let [sites] = await pool.query(sql)
+  let keepGoing = true
   for(let site of sites) {
-    await updateArticlesOfSite(site, pool)
+    keepGoing = await updateArticlesOfSite(site, pool)
     await pause()
+    if(!keepGoing) {
+      break
+    }
   }
   await pool.end()
 }
