@@ -5,7 +5,6 @@ import { pause } from './lib/util.mjs'
 import { TYPE } from './lib/yt.mjs'
 import { AT, MYSQL } from './config.mjs'
 
-const AT_MAX_RECORDS = 100
 const AT_TYPE_CHANNEL = 'YouTube 頻道'
 const AT_TYPE_USER = 'YouTube 帳號'
 const TYPE_MAP = {
@@ -21,7 +20,6 @@ const base = Airtable.base(AT.baseID)
 
 async function update() {
   let rows = await base(AT.table).select({
-    maxRecords: AT_MAX_RECORDS,
     view: AT.view,
     filterByFormula: 'FIND("YouTube", {type})'
   }).all()
