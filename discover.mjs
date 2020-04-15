@@ -53,7 +53,7 @@ async function discoverSite(site, pool) {
           site_id: site.site_id,
           url: item.id,
           article_type: DB_ARTICLE_TYPE.video,
-          created_at: timestamp,
+          first_seen_at: timestamp,
           first_seen_title: item.title,
           first_seen_description: item.description,
           first_seen_thumbnail_url: item.thumbnail_url,
