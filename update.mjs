@@ -89,10 +89,10 @@ async function updateArticlesOfSite(site, pool) {
       try {
         let insSQL = mysql.format('INSERT INTO ArticleSnapshot SET ?', snapshot)
         let [insRes] = await pool.query(insSQL)
-        console.log(insRes)
+        console.log('db insert article snapshot', insRes.info)
         let updSQL = mysql.format('UPDATE Article SET ? WHERE article_id = ?', [articleUpdates, article.article_id])
         let [updRes] = await pool.query(updSQL)
-        console.log(updRes)
+        console.log('db update article', article.article_id, updRes.info)
       } catch(e) {
         console.error(e)
       }
