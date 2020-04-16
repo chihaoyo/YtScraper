@@ -64,12 +64,12 @@ async function discoverSite(site, pool) {
         if(rows.length < 1) {
           sql = mysql.format('INSERT INTO Article SET ?', article)
           let [insRes] = await pool.query(sql)
-          console.log('db insert article', insRes.insertId, article.url)
+          console.log('db insert site', article.site_id, 'article', insRes.insertId, article.url)
         } else if (UPDATE_ARTICLE_FIRST_SEEN_FIELDS) {
           let existingArticleID = rows[0].article_id
           sql = mysql.format('UPDATE Article SET first_seen_title = ?, first_seen_description = ?, first_seen_thumbnail_url = ?, first_seen_published_to_pl_at = ? WHERE article_id = ?', [article.first_seen_title, article.first_seen_description, article.first_seen_thumbnail_url, article.first_seen_published_to_pl_at, existingArticleID])
           let [updRes] = await pool.query(sql)
-          console.log('db update article', existingArticleID, updRes.info)
+          console.log('db update site', article.site_id, 'article', existingArticleID, updRes.info)
         }
       }
       itemCount += items.length
