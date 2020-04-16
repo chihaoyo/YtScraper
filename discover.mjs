@@ -77,7 +77,8 @@ async function discoverSite(site, pool) {
 
       siteInfo = {
         playlistID,
-        nextPageToken
+        nextPageToken,
+        totalCount
       }
       sql = mysql.format('UPDATE Site SET site_info = ?, last_crawl_at = ? WHERE site_id = ?', [JSON.stringify(siteInfo), timestamp, site.site_id])
       let [updRes] = await pool.query(sql)
@@ -90,7 +91,7 @@ async function discoverSite(site, pool) {
 async function discover(siteIDs) {
   const pool = await mysql.createPool(MYSQL)
 
-  console.log(datetime(), 'get sites', ...siteIDs)
+  console.log(datetime(), 'get sites', ...(siteIDs ? siteIDs : []))
   let sql
   if(siteIDs && siteIDs.length > 0) {
     sql = mysql.format('SELECT * FROM Site WHERE site_id IN (?)', [siteIDs])
