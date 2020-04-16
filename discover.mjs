@@ -87,14 +87,19 @@ async function discoverSite(site, pool) {
   } // end of paging loop
 }
 
-async function discover(siteID) {
+async function discover(siteIDs) {
   const pool = await mysql.createPool(MYSQL)
 
-  console.log(datetime(), 'get sites')
-  let [rows] = await pool.query('SELECT * FROM Site')
-  let sites = siteID ? rows.filter(row => row.site_id === siteID) : rows
+  console.log(datetime(), 'get sites', ...siteIDs)
+  let sql
+  if(siteIDs && siteIDs.length > 0) {
+    sql = mysql.format('SELECT * FROM Site WHERE site_id IN (?)', [siteIDs])
+  } else {
+    sql = mysql.format('SELECT * FROM Site')
+  }
+  let [sites] = await pool.query(sql)
 
-  console.log(datetime(), 'discover sites')
+  console.log(datetime(), 'discover sites', ...sites.map(site => site.site_id))
   for(let site of sites) {
     await discoverSite(site, pool)
   }
@@ -102,8 +107,8 @@ async function discover(siteID) {
 }
 
 let args = process.argv.slice(2)
-let siteID
+let siteIDs
 if(args.length > 0) {
-  siteID = +args[0]
+  siteIDs = args.map(arg => +arg)
 }
-discover(siteID)
+discover(siteIDs)
