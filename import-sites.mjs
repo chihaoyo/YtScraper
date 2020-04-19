@@ -18,6 +18,8 @@ Airtable.configure({
 })
 const base = Airtable.base(AT.baseID)
 
+const UPDATE_EXISTING_SITES = false
+
 async function update() {
   let rows = await base(AT.table).select({
     view: AT.view,
@@ -34,14 +36,14 @@ async function update() {
   for(let site of sites) {
     console.log('query site', site.airtable_id, site.name, site.url)
     let [rows, fields] = await pool.query('SELECT * FROM Site WHERE airtable_id = ?', site.airtable_id)
-    if(rows.length > 0) {
+    if(rows.length <= 0) {
+      console.log('add site',  site.airtable_id, site.name, site.url)
+      let [res] = await pool.query('INSERT INTO Site SET ?', site)
+      console.log(res)
+    } else if(UPDATE_EXISTING_SITES) {
       console.log('update site',  site.airtable_id, site.name, site.url)
       let sql = mysql.format('UPDATE Site SET ? WHERE airtable_id = ?', [site, site.airtable_id])
       let [res] = await pool.query(sql)
-      console.log(res)
-    } else {
-      console.log('add site',  site.airtable_id, site.name, site.url)
-      let [res] = await pool.query('INSERT INTO Site SET ?', site)
       console.log(res)
     }
     await pause()
