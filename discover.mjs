@@ -11,7 +11,7 @@ const DB_ARTICLE_TYPE = {
   video: 'YTVideo'
 }
 
-const UPDATE_ARTICLE_FIRST_SEEN_FIELDS = true
+const UPDATE_ARTICLE_FIRST_SEEN_FIELDS = false
 
 async function discoverSite(site, pool) {
   let siteInfo = JSON.parse(site.site_info)
@@ -57,7 +57,7 @@ async function discoverSite(site, pool) {
           first_seen_title: item.title,
           first_seen_description: item.description,
           first_seen_thumbnail_url: item.thumbnail_url,
-          first_seen_published_to_pl_at: item.published_to_pl_at
+          first_seen_published_at: item.published_to_pl_at
         }
         sql = mysql.format('SELECT article_id FROM Article WHERE `site_id` = ? AND `url` = ?', [article.site_id, article.url])
         let [rows] = await pool.query(sql)
@@ -67,7 +67,7 @@ async function discoverSite(site, pool) {
           console.log('db insert site', article.site_id, 'article', insRes.insertId, article.url)
         } else if (UPDATE_ARTICLE_FIRST_SEEN_FIELDS) {
           let existingArticleID = rows[0].article_id
-          sql = mysql.format('UPDATE Article SET first_seen_title = ?, first_seen_description = ?, first_seen_thumbnail_url = ?, first_seen_published_to_pl_at = ? WHERE article_id = ?', [article.first_seen_title, article.first_seen_description, article.first_seen_thumbnail_url, article.first_seen_published_to_pl_at, existingArticleID])
+          sql = mysql.format('UPDATE Article SET first_seen_title = ?, first_seen_description = ?, first_seen_thumbnail_url = ?, first_seen_published_at = ? WHERE article_id = ?', [article.first_seen_title, article.first_seen_description, article.first_seen_thumbnail_url, article.first_seen_published_at, existingArticleID])
           let [updRes] = await pool.query(sql)
           console.log('db update site', article.site_id, 'article', existingArticleID, updRes.info)
         }
