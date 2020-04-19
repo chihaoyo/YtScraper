@@ -14,7 +14,7 @@ async function snapSite(site, pool) {
     return null
   }
   const part = 'id,snippet,statistics,contentDetails'
-  let channel, snapshot
+  let channel, snapshot, uploadsPlaylistID, totalCount
   if(site.type === youtube.TYPE.channel) {
     channel = await youtube.getChannel(id, part)
   } else if(site.type === youtube.TYPE.user) {
@@ -44,16 +44,22 @@ async function snapSite(site, pool) {
       })
     }
     if(channel.contentDetails) {
+      uploadsPlaylistID = channel.contentDetails.relatedPlaylists.uploads
       Object.assign(snapshot, {
-        uploads_playlist_id: channel.contentDetails.relatedPlaylists.uploads
+        uploads_playlist_id: uploadsPlaylistID
       })
+    }
+    if(uploadsPlaylistID) {
+      let playlistItems = await youtube.getPlaylistItems(uploadsPlaylistID, null, 'id,snippet')
+      totalCount = playlistItems.totalCount
     }
     date = new Date()
     datetimeStr = datetime(date)
     timestamp = Math.floor(date.getTime() / 1000)
     let [insRes] = await pool.query('INSERT INTO SiteSnapshot SET ?', snapshot)
     let siteInfo = {
-      playlistID: snapshot.uploads_playlist_id
+      playlistID: uploadsPlaylistID,
+      totalCount
     }
     let [updRes] = await pool.query('UPDATE Site SET site_info = ? WHERE site_id = ?', [JSON.stringify(siteInfo), site.site_id])
     console.log(datetimeStr, insRes, updRes)
